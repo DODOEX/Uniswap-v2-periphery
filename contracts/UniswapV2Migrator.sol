@@ -21,7 +21,7 @@ contract UniswapV2Migrator is IUniswapV2Migrator {
     // but it's not possible because it requires a call to the v1 factory, which takes too much gas
     receive() external payable {}
 
-    function migrate(address token, uint amountTokenMin, uint amountETHMin, address to, uint deadline)
+    function migrate(address token, uint256 fee, uint amountTokenMin, uint amountETHMin, address to, uint deadline)
         external
         override
     {
@@ -32,6 +32,7 @@ contract UniswapV2Migrator is IUniswapV2Migrator {
         TransferHelper.safeApprove(token, address(router), amountTokenV1);
         (uint amountTokenV2, uint amountETHV2,) = router.addLiquidityETH{value: amountETHV1}(
             token,
+            fee,
             amountTokenV1,
             amountTokenMin,
             amountETHMin,

@@ -44,11 +44,12 @@ library UniswapV2LiquidityMathLibrary {
         address factory,
         address tokenA,
         address tokenB,
+        uint256 fee,
         uint256 truePriceTokenA,
         uint256 truePriceTokenB
     ) view internal returns (uint256 reserveA, uint256 reserveB) {
         // first get reserves before the swap
-        (reserveA, reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
+        (reserveA, reserveB) = UniswapV2Library.getReserves(factory, tokenA, tokenB, fee);
 
         require(reserveA > 0 && reserveB > 0, 'UniswapV2ArbitrageLibrary: ZERO_PAIR_RESERVES');
 
@@ -61,11 +62,11 @@ library UniswapV2LiquidityMathLibrary {
 
         // now affect the trade to the reserves
         if (aToB) {
-            uint amountOut = UniswapV2Library.getAmountOut(amountIn, reserveA, reserveB);
+            uint amountOut = UniswapV2Library.getAmountOut(amountIn, reserveA, reserveB, fee);
             reserveA += amountIn;
             reserveB -= amountOut;
         } else {
-            uint amountOut = UniswapV2Library.getAmountOut(amountIn, reserveB, reserveA);
+            uint amountOut = UniswapV2Library.getAmountOut(amountIn, reserveB, reserveA, fee);
             reserveB += amountIn;
             reserveA -= amountOut;
         }
@@ -101,10 +102,11 @@ library UniswapV2LiquidityMathLibrary {
         address factory,
         address tokenA,
         address tokenB,
+        uint256 fee,
         uint256 liquidityAmount
     ) internal view returns (uint256 tokenAAmount, uint256 tokenBAmount) {
-        (uint256 reservesA, uint256 reservesB) = UniswapV2Library.getReserves(factory, tokenA, tokenB);
-        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB));
+        (uint256 reservesA, uint256 reservesB) = UniswapV2Library.getReserves(factory, tokenA, tokenB, fee);
+        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB, fee));
         bool feeOn = IUniswapV2Factory(factory).feeTo() != address(0);
         uint kLast = feeOn ? pair.kLast() : 0;
         uint totalSupply = pair.totalSupply();
@@ -117,6 +119,7 @@ library UniswapV2LiquidityMathLibrary {
         address factory,
         address tokenA,
         address tokenB,
+        uint256 fee,
         uint256 truePriceTokenA,
         uint256 truePriceTokenB,
         uint256 liquidityAmount
@@ -125,14 +128,14 @@ library UniswapV2LiquidityMathLibrary {
         uint256 tokenBAmount
     ) {
         bool feeOn = IUniswapV2Factory(factory).feeTo() != address(0);
-        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB));
+        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB, fee));
         uint kLast = feeOn ? pair.kLast() : 0;
         uint totalSupply = pair.totalSupply();
 
         // this also checks that totalSupply > 0
         require(totalSupply >= liquidityAmount && liquidityAmount > 0, 'ComputeLiquidityValue: LIQUIDITY_AMOUNT');
 
-        (uint reservesA, uint reservesB) = getReservesAfterArbitrage(factory, tokenA, tokenB, truePriceTokenA, truePriceTokenB);
+        (uint reservesA, uint reservesB) = getReservesAfterArbitrage(factory, tokenA, tokenB, fee, truePriceTokenA, truePriceTokenB);
 
         return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast);
     }
