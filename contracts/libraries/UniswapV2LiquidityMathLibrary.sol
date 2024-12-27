@@ -15,6 +15,7 @@ library UniswapV2LiquidityMathLibrary {
 
     // computes the direction and magnitude of the profit-maximizing trade
     function computeProfitMaximizingTrade(
+        uint256 fee,
         uint256 truePriceTokenA,
         uint256 truePriceTokenB,
         uint256 reserveA,
@@ -26,12 +27,12 @@ library UniswapV2LiquidityMathLibrary {
 
         uint256 leftSide = Babylonian.sqrt(
             FullMath.mulDiv(
-                invariant.mul(1000),
+                invariant.mul(10000),
                 aToB ? truePriceTokenA : truePriceTokenB,
-                (aToB ? truePriceTokenB : truePriceTokenA).mul(997)
+                (aToB ? truePriceTokenB : truePriceTokenA).mul(10000 - fee)
             )
         );
-        uint256 rightSide = (aToB ? reserveA.mul(1000) : reserveB.mul(1000)) / 997;
+        uint256 rightSide = (aToB ? reserveA.mul(10000) : reserveB.mul(10000)) / (10000 - fee);
 
         if (leftSide < rightSide) return (false, 0);
 
@@ -54,7 +55,7 @@ library UniswapV2LiquidityMathLibrary {
         require(reserveA > 0 && reserveB > 0, 'UniswapV2ArbitrageLibrary: ZERO_PAIR_RESERVES');
 
         // then compute how much to swap to arb to the true price
-        (bool aToB, uint256 amountIn) = computeProfitMaximizingTrade(truePriceTokenA, truePriceTokenB, reserveA, reserveB);
+        (bool aToB, uint256 amountIn) = computeProfitMaximizingTrade(fee, truePriceTokenA, truePriceTokenB, reserveA, reserveB);
 
         if (amountIn == 0) {
             return (reserveA, reserveB);
