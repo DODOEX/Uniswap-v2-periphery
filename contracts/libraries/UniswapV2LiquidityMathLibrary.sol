@@ -140,6 +140,6 @@ library UniswapV2LiquidityMathLibrary {
 
         (uint reservesA, uint reservesB) = getReservesAfterArbitrage(factory, tokenA, tokenB, fee, truePriceTokenA, truePriceTokenB);
 
-        return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast, );
+        return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast, lpMtRatio);
     }
 }
