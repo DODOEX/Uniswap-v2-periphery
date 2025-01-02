@@ -1,6 +1,5 @@
 pragma solidity >=0.5.0;
 
-import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/lib/contracts/libraries/Babylonian.sol';
 import '@uniswap/lib/contracts/libraries/FullMath.sol';
@@ -80,7 +79,8 @@ library UniswapV2LiquidityMathLibrary {
         uint256 totalSupply,
         uint256 liquidityAmount,
         bool feeOn,
-        uint kLast
+        uint kLast,
+        uint lpMtRatio
     ) internal pure returns (uint256 tokenAAmount, uint256 tokenBAmount) {
         if (feeOn && kLast > 0) {
             uint rootK = Babylonian.sqrt(reservesA.mul(reservesB));
@@ -88,7 +88,7 @@ library UniswapV2LiquidityMathLibrary {
             if (rootK > rootKLast) {
                 uint numerator1 = totalSupply;
                 uint numerator2 = rootK.sub(rootKLast);
-                uint denominator = rootK.mul(5).add(rootKLast);
+                uint denominator = rootK.mul(lpMtRatio.sub(1)).add(rootKLast);
                 uint feeLiquidity = FullMath.mulDiv(numerator1, numerator2, denominator);
                 totalSupply = totalSupply.add(feeLiquidity);
             }
@@ -111,7 +111,8 @@ library UniswapV2LiquidityMathLibrary {
         bool feeOn = IUniswapV2Factory(factory).feeTo() != address(0);
         uint kLast = feeOn ? pair.kLast() : 0;
         uint totalSupply = pair.totalSupply();
-        return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast);
+        uint lpMtRatio = pair.lpMtRatio();
+        return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast, lpMtRatio);
     }
 
     // given two tokens, tokenA and tokenB, and their "true price", i.e. the observed ratio of value of token A to token B,
@@ -132,12 +133,13 @@ library UniswapV2LiquidityMathLibrary {
         IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB, fee));
         uint kLast = feeOn ? pair.kLast() : 0;
         uint totalSupply = pair.totalSupply();
+        uint lpMtRatio = pair.lpMtRatio();
 
         // this also checks that totalSupply > 0
         require(totalSupply >= liquidityAmount && liquidityAmount > 0, 'ComputeLiquidityValue: LIQUIDITY_AMOUNT');
 
         (uint reservesA, uint reservesB) = getReservesAfterArbitrage(factory, tokenA, tokenB, fee, truePriceTokenA, truePriceTokenB);
 
-        return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast);
+        return computeLiquidityValue(reservesA, reservesB, totalSupply, liquidityAmount, feeOn, kLast, );
     }
 }
